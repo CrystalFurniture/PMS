@@ -1,0 +1,11 @@
+# Database dumps
+*.sql
+
+# Archives
+*.rar
+
+# Generated catalogue PDFs
+Download/**/*.pdf
+
+# Product images (kept on server only)
+Category/
