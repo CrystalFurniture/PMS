@@ -1,0 +1,316 @@
+{
+    "database": "pms_local",
+    "labels": "retrieval_synthetic.csv",
+    "limit": 12,
+    "index_model": null,
+    "at": "2026-10-12T15:38:04+05:30",
+    "summary": {
+        "kw_v1": {
+            "synthetic": {
+                "cases": 21,
+                "recall_at_1": 0.38095238095238093,
+                "recall_at_5": 0.6666666666666666,
+                "recall_at_12": 0.7619047619047619,
+                "mrr": 0.517,
+                "no_candidates": 1,
+                "missed": [
+                    "S03",
+                    "S05",
+                    "S14",
+                    "S16",
+                    "S21"
+                ]
+            },
+            "synthetic_ambiguous": {
+                "cases": 3,
+                "recall_at_1": 0.6666666666666666,
+                "recall_at_5": 0.6666666666666666,
+                "recall_at_12": 0.6666666666666666,
+                "mrr": 0.667,
+                "no_candidates": 0,
+                "missed": [
+                    "S17"
+                ]
+            }
+        },
+        "kw": {
+            "synthetic": {
+                "cases": 21,
+                "recall_at_1": 0.5714285714285714,
+                "recall_at_5": 0.9047619047619048,
+                "recall_at_12": 0.9047619047619048,
+                "mrr": 0.714,
+                "no_candidates": 1,
+                "missed": [
+                    "S16",
+                    "S21"
+                ]
+            },
+            "synthetic_ambiguous": {
+                "cases": 3,
+                "recall_at_1": 0.6666666666666666,
+                "recall_at_5": 0.6666666666666666,
+                "recall_at_12": 0.6666666666666666,
+                "mrr": 0.667,
+                "no_candidates": 0,
+                "missed": [
+                    "S17"
+                ]
+            }
+        }
+    },
+    "detail": {
+        "kw_v1": {
+            "synthetic": [
+                {
+                    "case": "S01",
+                    "rank": 2,
+                    "candidates": 12
+                },
+                {
+                    "case": "S02",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S03",
+                    "rank": null,
+                    "candidates": 12
+                },
+                {
+                    "case": "S04",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S05",
+                    "rank": null,
+                    "candidates": 12
+                },
+                {
+                    "case": "S06",
+                    "rank": 2,
+                    "candidates": 12
+                },
+                {
+                    "case": "S07",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S08",
+                    "rank": 4,
+                    "candidates": 12
+                },
+                {
+                    "case": "S09",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S10",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S11",
+                    "rank": 2,
+                    "candidates": 12
+                },
+                {
+                    "case": "S12",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S13",
+                    "rank": 10,
+                    "candidates": 12
+                },
+                {
+                    "case": "S14",
+                    "rank": null,
+                    "candidates": 12
+                },
+                {
+                    "case": "S15",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S16",
+                    "rank": null,
+                    "candidates": 12
+                },
+                {
+                    "case": "S18",
+                    "rank": 6,
+                    "candidates": 12
+                },
+                {
+                    "case": "S19",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S20",
+                    "rank": 3,
+                    "candidates": 12
+                },
+                {
+                    "case": "S21",
+                    "rank": null,
+                    "candidates": 0
+                },
+                {
+                    "case": "S22",
+                    "rank": 2,
+                    "candidates": 12
+                }
+            ],
+            "synthetic_ambiguous": [
+                {
+                    "case": "S17",
+                    "rank": null,
+                    "candidates": 12
+                },
+                {
+                    "case": "S23",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S24",
+                    "rank": 1,
+                    "candidates": 12
+                }
+            ]
+        },
+        "kw": {
+            "synthetic": [
+                {
+                    "case": "S01",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S02",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S03",
+                    "rank": 3,
+                    "candidates": 12
+                },
+                {
+                    "case": "S04",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S05",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S06",
+                    "rank": 2,
+                    "candidates": 12
+                },
+                {
+                    "case": "S07",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S08",
+                    "rank": 2,
+                    "candidates": 12
+                },
+                {
+                    "case": "S09",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S10",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S11",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S12",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S13",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S14",
+                    "rank": 2,
+                    "candidates": 12
+                },
+                {
+                    "case": "S15",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S16",
+                    "rank": null,
+                    "candidates": 12
+                },
+                {
+                    "case": "S18",
+                    "rank": 3,
+                    "candidates": 12
+                },
+                {
+                    "case": "S19",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S20",
+                    "rank": 3,
+                    "candidates": 12
+                },
+                {
+                    "case": "S21",
+                    "rank": null,
+                    "candidates": 0
+                },
+                {
+                    "case": "S22",
+                    "rank": 2,
+                    "candidates": 12
+                }
+            ],
+            "synthetic_ambiguous": [
+                {
+                    "case": "S17",
+                    "rank": null,
+                    "candidates": 12
+                },
+                {
+                    "case": "S23",
+                    "rank": 1,
+                    "candidates": 12
+                },
+                {
+                    "case": "S24",
+                    "rank": 1,
+                    "candidates": 12
+                }
+            ]
+        }
+    }
+}

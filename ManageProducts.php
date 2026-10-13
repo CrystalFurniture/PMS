@@ -563,23 +563,13 @@ $pdfDP->Output($full_path2, 'F');
 		include_once('templates/side_menubar.php');
 
 ?>
-   <!--prettyTag CSS-->
-<link rel="stylesheet" href="css/prettytag.css" />
-   <!--prettyTag JS-->
-
-<style>
-.form-control {
-	font-size: 20px;
-    font-weight: 600;
-}
-</style>
 <!-- Content Wrapper. Contains page content -->
 <div class="content-wrapper">
   <!-- Content Header (Page header) -->
   <section class="content-header">
     <h1>
-      Catalogue Items
-      <small></small>
+      Catalogue products
+      <small class="pms-sub">Products shown in catalogue searches. Use the filters to find products with a missing price.</small>
     </h1>
     <ol class="breadcrumb">
       <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
@@ -614,14 +604,19 @@ $pdfDP->Output($full_path2, 'F');
 		  
 			<?php if(in_array('createProduct', $UserPermission) ){ ?>
 
-			<a href="AddProducts.php" class="btn btn-primary float-right"> Add Product</a>
-			</br>
-			</br>
+			<div class="pms-page-actions">
+				<a href="AddProducts.php" class="btn btn-primary">Add product</a>
+				<a href="UploadProduct.php" class="btn btn-default" target="_blank">Upload products (Excel)</a>
+			</div>
 			<?php } ?>
 
 			<div class="box">
           <div class="box-header">
-            <h3 class="box-title">Manage Catalogue Items</h3>
+            <div class="pms-chips" role="group" aria-label="Quick filters" style="margin:0">
+              <button type="button" class="pms-chip qt-price-chip" aria-pressed="true" data-missing="">All</button>
+              <button type="button" class="pms-chip qt-price-chip" aria-pressed="false" data-missing="dp">No DP price</button>
+              <button type="button" class="pms-chip qt-price-chip" aria-pressed="false" data-missing="mrp">No MRP price</button>
+            </div>
 			
 			
           </div>
@@ -629,9 +624,9 @@ $pdfDP->Output($full_path2, 'F');
           <div class="box-body">
 		  <form method="post" name="myForm">
 
-			<input  value='Download'  class="btn btn-primary pull-right"  data-toggle="modal" data-target="#textModal"/>
-			</br>
-			</br>
+			<div style="display:flex; justify-content:flex-end; margin-bottom:8px">
+				<button type="button" class="btn btn-default" data-toggle="modal" data-target="#textModal">Download selected as PDF</button>
+			</div>
 			
 			
             <table id="manageTable" class="table table-bordered table-striped" data-page-length='25'>
@@ -673,7 +668,7 @@ $pdfDP->Output($full_path2, 'F');
 
 			  ?>
 			  
-			  <tr role="row" class="odd">
+			  <tr role="row" class="odd" data-dp="<?php echo (int) $row['dp_price'] > 0 ? '1' : '0'; ?>" data-mrp="<?php echo (int) $row['mrp_price'] > 0 ? '1' : '0'; ?>">
 				<td>
 					<div class="form-check">
 					<span class="counter" style=" display: none;">0</span>
@@ -683,10 +678,10 @@ $pdfDP->Output($full_path2, 'F');
 				</td>
 				<?php $thumb = (file_exists($row["image"])) ? $row["thumb"] : ""; ?>
 				<td>
-					<img src="<?php echo $thumb; ?>" class="img-circle" width="50" height="50">
+					<?php if ($thumb !== '') { ?><img src="<?php echo htmlspecialchars($thumb, ENT_QUOTES, 'UTF-8', false); ?>" alt="" loading="lazy" style="width:44px; height:44px; border-radius:8px; object-fit:cover"><?php } else { ?><span class="pms-thumb-box" style="width:44px; height:44px; font-size:10px">photo</span><?php } ?>
 				</td>
 				<td>
-					<?php echo $row["name"]; ?>
+					<strong><?php echo htmlspecialchars((string) $row["name"], ENT_QUOTES, 'UTF-8', false); ?></strong>
 				</td>
 				<td>
 					<ul class="cloud-tags">
@@ -695,7 +690,7 @@ $pdfDP->Output($full_path2, 'F');
 							$tags = explode(",",$str);
 							foreach($tags as $key => $val){
 								if($val !=''){
-								echo '<li><a href="#">'.$val.'</a> </li>';
+								echo '<li><a href="#">'.htmlspecialchars($val, ENT_QUOTES, 'UTF-8', false).'</a> </li>';
 								}
 								
 								
@@ -704,38 +699,40 @@ $pdfDP->Output($full_path2, 'F');
 					</ul>
 				</td>
 				<td>
-					<?php echo $row["category"]; ?>
+					<?php echo htmlspecialchars((string) $row["category"], ENT_QUOTES, 'UTF-8', false); ?>
 				</td>
 				<td>
-					<?php echo $row["color"]; ?>
+					<?php echo htmlspecialchars((string) $row["color"], ENT_QUOTES, 'UTF-8', false); ?>
 				</td>
 				<td>
-					<?php echo $row["dimension"]; ?>
+					<?php echo htmlspecialchars((string) $row["dimension"], ENT_QUOTES, 'UTF-8', false); ?>
 				</td>
 				<td>
 					<?php 
 							$description = strip_tags($row["description"]);
 							
 							if (strlen($description) < 30 ) {
-								echo $description;
+								echo htmlspecialchars($description, ENT_QUOTES, 'UTF-8', false);
 								
 							}
 							else{
-								echo substr($description,0,30)."...";
+								echo htmlspecialchars(substr($description,0,30), ENT_QUOTES, 'UTF-8', false)."...";
 								
 							}
 					?>
 				</td>
-				<td>
-					<?php echo $row["mrp_price"]; ?>
+				<td class="pms-num" style="text-align:right" data-order="<?php echo (int) $row['mrp_price']; ?>">
+					<?php echo (int) $row["mrp_price"] > 0 ? (int) $row["mrp_price"] : '<span class="pms-badge pms-badge-warn">Missing</span>'; ?>
 				</td>
-				<td>
-					<?php echo $row["dp_price"]; ?>
+				<td class="pms-num" style="text-align:right" data-order="<?php echo (int) $row['dp_price']; ?>">
+					<?php echo (int) $row["dp_price"] > 0 ? (int) $row["dp_price"] : '<span class="pms-badge pms-badge-warn">Missing</span>'; ?>
 				</td>
 				<?php if(in_array('updateProduct', $UserPermission) || in_array('deleteProduct', $UserPermission)){ ?>
 				<td>
-					<a class="btn btn-default" href="EditProduct.php?id=<?php echo $row['id'] ?>"><i class="fa fa-pencil"></i></a> 
-					<button type="button" class="btn btn-default" onclick="removeFunc(<?php echo $row['id'] ?>)" data-toggle="modal" data-target="#removeModal"><i class="fa fa-trash"></i></button>
+					<div class="pms-qactions">
+					<a class="btn btn-default btn-sm" href="EditProduct.php?id=<?php echo (int) $row['id'] ?>">Edit</a>
+					<button type="button" class="btn btn-danger btn-sm" onclick="removeFunc(<?php echo (int) $row['id'] ?>)" data-toggle="modal" data-target="#removeModal" aria-label="Delete <?php echo htmlspecialchars((string) $row['name'], ENT_QUOTES, 'UTF-8', false); ?>"><i class="fa fa-trash" aria-hidden="true"></i></button>
+					</div>
 				</td>
 				<?php } ?>
 
@@ -925,6 +922,27 @@ $(document).ready( function () {
   });
    
 });
+
+			// Quick filters: products with no DP / MRP price (also opened from the dashboard with ?missing=dp|mrp).
+			$.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+				var missing = $('.qt-price-chip[aria-pressed=true]').data('missing');
+				if (settings.nTable.id !== 'manageTable' || !missing) {
+					return true;
+				}
+				var node = settings.aoData[dataIndex].nTr;
+				return !node || node.getAttribute('data-' + missing) === '0';
+			});
+			$(document).on('click', '.qt-price-chip', function () {
+				$('.qt-price-chip').attr('aria-pressed', 'false');
+				$(this).attr('aria-pressed', 'true');
+				$('#manageTable').DataTable().draw();
+			});
+			$(function () {
+				var m = /[?&]missing=(dp|mrp)/.exec(window.location.search);
+				if (m) {
+					$('.qt-price-chip[data-missing=' + m[1] + ']').trigger('click');
+				}
+			});
 
 			$('#manageTable').on('search.dt', function() {
 				var inputText = $('.dataTables_filter input').val();

@@ -1,26 +1,23 @@
 <?php
 		include_once('DB/conn.php');
+		include_once('includes/quotation_lib.php');
 error_reporting(0);
 		@session_start();
+		qt_require_login_page();
 		$userName = $_SESSION['username'];
+
+	list($row, $error) = qt_fetch_owned_quotation($connect, isset($_GET['id']) ? $_GET['id'] : '', 'MRP');
+	$shopping_cartMRP = $row ? qt_decode_items($row['q_items']) : null;
+	if($error !== null || $shopping_cartMRP === null){
+		qt_flash_set($error !== null ? $error : 'The saved lines of this quotation cannot be read.');
+		qt_redirect('ViewQuotation.php');
+	}
 
 		include_once('templates/header.php');
 
 		include_once('templates/header_menu.php');
 
 		include_once('templates/side_menubar.php');
-		
-		
- $QuoteItems = serialize($_SESSION["shopping_cartMRP"]);
- 
- $id = $_GET['id'];
- 
-			$result = mysqli_query($connect,"select * from tbl_quotation where q_id = '".$id."'");
-			$row = mysqli_fetch_assoc($result);
-			
-		//$shopping_cartMRP = unserialize($row['q_items']);
-		$shopping_cartMRP = unserialize(base64_decode($row['q_items']));
-
 ?>
 <style>
 th{
@@ -106,17 +103,17 @@ th{
 					</tr>
 
 					<tr>
-						<td style="border: 1px solid black !important;"colspan=3 rowspan=5>Client Name & Address :- <?php echo $row['q_name']; ?></td>
+						<td style="border: 1px solid black !important;"colspan=3 rowspan=5>Client Name & Address :- <?php echo qt_e($row['q_name']); ?></td>
 						<td style="border: 1px solid black !important;" width="140" colspan=2>QUOTATION NO.</td>
-						<td style="border: 1px solid black !important;" colspan=2><?= $row['q_num']; ?></td>
+						<td style="border: 1px solid black !important;" colspan=2><?= qt_e($row['q_num']); ?></td>
 						<td style="border: 1px solid black !important;">REV.NO</td>
-						<td style="border: 1px solid black !important;"> <?= ($row['q_revDate'] != '') ? 'Cry/21-22/REV-'.$row['q_revNum'] : '' ?></td>
+						<td style="border: 1px solid black !important;"> <?= ($row['q_revDate'] != '') ? 'Cry/21-22/REV-'.(int)$row['q_revNum'] : '' ?></td>
 					</tr>
 					<tr>
 						<td style="border: 1px solid black !important;"colspan=2>DATE</td>
-						<td style="border: 1px solid black !important;" colspan=2><?= $row['q_date'] ?></td>
+						<td style="border: 1px solid black !important;" colspan=2><?= qt_e($row['q_date']) ?></td>
 						<td style="border: 1px solid black !important;">DATE</td>
-						<td style="border: 1px solid black !important;"><?= ($row['q_revDate'] != '') ? $row['q_revDate'] : '' ?></td>
+						<td style="border: 1px solid black !important;"><?= ($row['q_revDate'] != '') ? qt_e($row['q_revDate']) : '' ?></td>
 					</tr>
 					<tr>
 						<td style="border: 1px solid black !important;"colspan=2>GST NO </td>
@@ -131,8 +128,8 @@ th{
 					</tr>
 					<tr>
 						<td style="border: 1px solid black !important;"colspan=2></td>
-						<td style="border: 1px solid black !important;"colspan=2><?php echo $_SESSION['fullName']; ?> (<?php echo $_SESSION['phone']; ?>)</td>
-						<td style="border: 1px solid black !important;"colspan=2><?php echo $_SESSION['email']; ?></td>
+						<td style="border: 1px solid black !important;"colspan=2><?php echo qt_e($_SESSION['fullName']); ?> (<?php echo qt_e($_SESSION['phone']); ?>)</td>
+						<td style="border: 1px solid black !important;"colspan=2><?php echo qt_e($_SESSION['email']); ?></td>
 					</tr>
 					<tr>
 						<td colspan=8></td>
@@ -156,13 +153,13 @@ th{
 					<tr>
 						<td style="text-align: center;border: 1px solid black !important;vertical-align: middle;" rowspan=4>
 						<?php echo $i++; ?></td>
-						<td style="line-height: 2.5em; border: 1px solid black !important;"colspan=2><?php echo $product["name"]; ?></td>
+						<td style="line-height: 2.5em; border: 1px solid black !important;"colspan=2><?php echo qt_e($product["name"]); ?></td>
 						<td style="text-align: -webkit-center;width: 200px;border: 1px solid black !important;" rowspan=4 colspan=3>
 					
 						<?php if($product["image"]!='')
 						{?>
 							<p>&nbsp;</p>
-							<img src='http://192.168.1.111/pms/core/<?= $product["image"];?>'  width="122" height="68" hspace="46" vspace="20" >
+							<img src='http://192.168.1.111/pms/core/<?= qt_e($product["image"]);?>'  width="122" height="68" hspace="46" vspace="20" >
 							<p>&nbsp;</p>
 						<?php }
 						else{
@@ -171,21 +168,21 @@ th{
 						?>
 						</td>
 						<!--<td style="text-align: center;border: 1px solid black !important;vertical-align: middle;" rowspan=3 >Nos.</td>-->
-						<td style="text-align: center;border: 1px solid black !important;vertical-align: middle;" rowspan=4 ><?php echo $product["quantity"] . " Nos."; ?></td>
-						<td style="text-align: center;border: 1px solid black !important;vertical-align: middle;" rowspan=4 ><?php echo $product["price"]; ?></td>
-						<td style="text-align: center;border: 1px solid black !important;vertical-align: middle;" rowspan=4 ><?php echo $product["price"]*$product["quantity"]; ?></td>
+						<td style="text-align: center;border: 1px solid black !important;vertical-align: middle;" rowspan=4 ><?php echo qt_e($product["quantity"]) . " Nos."; ?></td>
+						<td style="text-align: center;border: 1px solid black !important;vertical-align: middle;" rowspan=4 ><?php echo qt_e($product["price"]); ?></td>
+						<td style="text-align: center;border: 1px solid black !important;vertical-align: middle;" rowspan=4 ><?php echo qt_e($product["price"]*$product["quantity"]); ?></td>
 					</tr>
 					<tr>
 						<!--<td style="border: 1px solid black !important;">12</td>-->
-						<td style="line-height: 2.5em;border: 1px solid black !important;"colspan=2><?php echo $product["description"]; ?></td>
+						<td style="line-height: 2.5em;border: 1px solid black !important;"colspan=2><?php echo qt_safe_html($product["description"]); ?></td>
 					</tr>
 					<tr>
 						<!--<td style="border: 1px solid black !important;">123</td>-->
-						<td style="line-height: 2.5em;border: 1px solid black !important;"colspan=2>Size :- <?php echo $product["size"]; ?></td>
+						<td style="line-height: 2.5em;border: 1px solid black !important;"colspan=2>Size :- <?php echo qt_e($product["size"]); ?></td>
 					</tr>
 					<tr>
 						<!--<td style="border: 1px solid black !important;">123</td>-->
-						<td style="line-height: 2.5em;border: 1px solid black !important;"colspan=2>Color :- <?php echo $product["color"]; ?></td>
+						<td style="line-height: 2.5em;border: 1px solid black !important;"colspan=2>Color :- <?php echo qt_e($product["color"]); ?></td>
 					</tr>
 					<!--<tr>
 						<td style="border: 1px solid black !important;"></td>
@@ -227,11 +224,11 @@ th{
 					<tr>
 						<td style="border: 1px solid black !important;"colspan=2>Bank : Axis Bank Ltd. </td>
 						<td style="border: 1px solid black !important;"colspan=3>Branch : Lakkadganj, Nagpur</td>
-					<?php if($_POST['Discount'] != ''){
+					<?php if($row['q_discount'] != ''){
 						?>
 						<td style="border: 1px solid black !important;" colspan=2>Discount In %</td>
-						<td style="border: 1px solid black !important;"><?= $_POST['Discount']. " %"; ?></td>
-						<td style="border: 1px solid black !important;"><?php $discount = ($_POST['Discount'] * ($total_price)) /100; 
+						<td style="border: 1px solid black !important;"><?= qt_e($row['q_discount']). " %"; ?></td>
+						<td style="border: 1px solid black !important;"><?php $discount = ((float)$row['q_discount'] * ($total_price)) /100; 
 							echo  number_format($discount, 2);?></td>
 					</tr>
 					

@@ -2,7 +2,12 @@
 		include_once('DB/conn.php');
 
 		error_reporting(E_ALL);
-		
+
+	if(empty($_SESSION['user_id'])){
+		http_response_code(401);
+		exit;
+	}
+
 	$id = $_REQUEST['product_id'];
 	$table = $_REQUEST['table'];	
 
@@ -50,10 +55,9 @@
 		}
 	
 		else if($table == 'tbl_quotation'){
-			
-			$query = mysqli_query($connect,"Delete from tbl_quotation where q_id = ". $id);
-			
-			$rows = mysqli_fetch_assoc($query);
+			// Quotations are deleted through action.php (delete_quotation): POST, CSRF token, owner only.
+			http_response_code(410);
+			exit;
 		}
 	
 	//$sql = mysqli_query($connect, "Delete from ".$table." where id = ".$id."");

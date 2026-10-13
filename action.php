@@ -1,470 +1,173 @@
 <?php
 	include_once('DB/conn.php');
+	include_once('includes/quotation_lib.php');
 	error_reporting(0);
 		@session_start();
-		$userName = $_SESSION['username'];
 
+	// Every action here changes the session cart or a quotation: logged-in POST with a CSRF token only.
+	qt_require_login_ajax();
+	if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+		qt_json_exit(405, array('success' => false, 'error' => 'Method not allowed.'));
+	}
+	if (!qt_csrf_valid(isset($_POST['csrf_token']) ? $_POST['csrf_token'] : '')) {
+		qt_json_exit(403, array('success' => false, 'error' => 'Your page has expired. Please reload it and try again.'));
+	}
 
-	function SanatizeInput($data){
-			
-			  $data = trim($data);
-			  $data = addslashes($data);
-						
-			return $data;
-		}
+	$action = isset($_POST['action']) ? (string) $_POST['action'] : '';
 
+	$cartActions = array(
+		'add_dp' => array('add', 'DP'), 'add_mrp' => array('add', 'MRP'),
+		'quantityDP_change' => array('quantity', 'DP'), 'quantityMRP_change' => array('quantity', 'MRP'),
+		'removeDP' => array('remove', 'DP'), 'removeMRP' => array('remove', 'MRP'),
+	);
 
-		
-if($_POST["action"] == "add_dp")  
+function cart_alert($status, $kind = 'warning')
 {
-	$status="";
-	$id = $_POST['product_id'];
-
-
-		$result = mysqli_query($connect,"SELECT p.*, pl.* FROM products p INNER JOIN pricelist pl on pl.p_prodId = p.id WHERE p.id ='".$id."'");
-		$row = mysqli_fetch_assoc($result);
-		$name = SanatizeInput($row['name']);
-		$description = SanatizeInput($row['description']);
-
-		$color = SanatizeInput($row['color']);
-		$price = SanatizeInput($row['dp_price']);
-		$image = SanatizeInput($row['thumb']);
-		$size = SanatizeInput($row['dimension']);
-
-		$cartArray = array(
-			$name=>array(
-			'id'=>$id,
-			'name'=>$name,
-			'description'=>$description,
-			'color'=>$color,
-			'price'=>$price,
-			'quantity'=>1,
-			'image'=>$image,
-			'size'=>$size
-			)
-		);
-
-		if(empty($_SESSION["shopping_cartDp"])) {
-			$_SESSION["shopping_cartDp"] = $cartArray;
-			$status = "Product is added to your cart!";
-		}
-		else{
-				$array_keys = array_keys($_SESSION["shopping_cartDp"]);
-				if(in_array($name,$array_keys)) {
-					$status = "Product is already added to your cart!";	
-				} 
-				else {
-				$_SESSION["shopping_cartDp"] = array_merge($_SESSION["shopping_cartDp"],$cartArray);
-				$status = "Product is added to your cart!";
-				}
-
-			}
-
-				if($status != ''):
-					echo '<div class="alert alert-warning alert-dismissible" role="alert">
+	return '<div class="alert alert-' . $kind . ' alert-dismissible" role="alert">
 					  <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-					  '.$status.'
+					  ' . qt_e($status) . '
 					</div>';
-				  
-				  endif;
-					
-					
-					
-					//if(!empty($_SESSION["shopping_cartDp"])) {
-					$cart_count = count(array_keys($_SESSION["shopping_cartDp"]));
-				
-					echo '<div class="cart_div">
-					<a href="ViewOrderDp.php"><img src="assets/images/Excel.png" width="50"/> <span>'.$cart_count.'</span></a>
-					</div>';
-					
-
 }
 
-if($_POST["action"] == "add_mrp")  
+function cart_table_response($type, $error = null)
 {
-	$status="";
-		
-		$id = $_POST['product_id'];
-
-
-		$result = mysqli_query($connect,"SELECT p.*, pl.* FROM products p INNER JOIN pricelist pl on pl.p_prodId = p.id WHERE p.id ='".$id."'");
-		$row = mysqli_fetch_assoc($result);
-		$name = SanatizeInput($row['name']);
-		$description = SanatizeInput($row['description']);
-
-		$color = SanatizeInput($row['color']);
-		$price = SanatizeInput($row['mrp_price']);
-		$image = SanatizeInput($row['thumb']);
-		$size = SanatizeInput($row['dimension']);
-
-		$cartArray = array(
-			$name=>array(
-			'id'=>$id,
-			'name'=>$name,
-			'description'=>$description,
-			'color'=>$color,
-			'price'=>$price,
-			'quantity'=>1,
-			'image'=>$image,
-			'size'=>$size
-			)
-		);
-
-		if(empty($_SESSION["shopping_cartMRP"]))
-			{
-				$_SESSION["shopping_cartMRP"] = $cartArray;
-				$status = "Product is added to your cart!";
-			}
-			else
-			{
-				$array_keys = array_keys($_SESSION["shopping_cartMRP"]);
-				if(in_array($name,$array_keys)) {
-					$status = "Product is already added to your cart!";	
-				} 
-				else
-				{
-					$_SESSION["shopping_cartMRP"] = array_merge($_SESSION["shopping_cartMRP"],$cartArray);
-					$status = "Product is added to your cart!";
-				}
-
-			}
-			
-			 if($status != ''):
-					echo '<div class="alert alert-warning alert-dismissible" role="alert">
-					  <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-					  '.$status.'
-					</div>';
-				  
-			endif; 
-					$cart_count = count(array_keys($_SESSION["shopping_cartMRP"]));
-					
-					echo '<div class="cart_div">
-					<a href="ViewOrderMRP.php"><img src="assets/images/Excel.png" width="50"/> <span>'.$cart_count.'</span></a>
-					</div>';
-					
-		
+	$key = ($type === 'DP') ? 'order_table' : 'order_tableMRP';
+	$out = array('success' => $error === null, $key => qt_render_cart_table($type), 'summary' => qt_render_cart_summary($type));
+	if ($error !== null) {
+		$out['error'] = $error;
+	}
+	qt_json_exit(200, $out);
 }
 
+if (isset($cartActions[$action])) {
+	list($kind, $type) = $cartActions[$action];
+	$cfg = qt_config($type);
+	$cart = qt_cart_get($type);
 
-// Quantity Change DP
-		$order_table = '';  
+	// Add product (HTML response: status message + cart badge)
+	if ($kind === 'add') {
+		$productId = qt_parse_id(isset($_POST['product_id']) ? $_POST['product_id'] : '');
+		$status = '';
+		if ($productId === null) {
+			$status = 'Invalid product.';
+		} elseif (isset($cart[(string) $productId])) {
+			$status = 'Product is already added to your cart!';
+		} else {
+			list($line, $error) = qt_load_product_line($connect, $productId, $type);
+			$zeroConfirmed = isset($_POST['confirm_zero']) && $_POST['confirm_zero'] === '1';
+			if ($error === null && qt_zero_price_rule() && qt_is_zero_price($line['price']) && !$zeroConfirmed) {
+				// Pilot rule: a 0 price needs the employee's explicit confirmation (the create screen asks, then resends).
+				if (isset($_POST['view']) && $_POST['view'] === 'summary') {
+					qt_json_exit(200, array(
+						'success' => false,
+						'needs_confirm' => true,
+						'confirm_text' => qt_zero_price_text($type, $line['name']),
+						'message' => '',
+						'summary' => qt_render_cart_summary($type),
+						'count' => count($cart),
+					));
+				}
+				$error = 'This product has a 0 price. Add it from the product screen and confirm the 0 price.';
+			}
+			if ($error !== null) {
+				$status = $error;
+			} else {
+				if (qt_is_zero_price($line['price'])) {
+					$line['zero_confirmed'] = $zeroConfirmed;
+				}
+				$cart[(string) $productId] = $line;
+				qt_cart_set($type, $cart);
+				$status = 'Product is added to your cart!' . ($line['price_note'] !== '' ? ' ' . $line['price_note'] : '');
+			}
+		}
 
+		// The create screens' cart panel asks for JSON: message, refreshed panel, line count.
+		if (isset($_POST['view']) && $_POST['view'] === 'summary') {
+			qt_json_exit(200, array(
+				'success' => isset($cart[(string) $productId]),
+				'message' => cart_alert($status, strpos($status, 'Product is added') === 0 ? 'success' : 'warning'),
+				'summary' => qt_render_cart_summary($type),
+				'count' => count($cart),
+			));
+		}
 
-	if($_POST["action"] == "quantityDP_change")  
-      {  
-		
-           foreach($_SESSION["shopping_cartDp"] as $keys => $values)  
-           {  
-                if($_SESSION["shopping_cartDp"][$keys]['id'] == $_POST["id"])  
-                {  
-                     $_SESSION["shopping_cartDp"][$keys]['quantity'] = $_POST["quantity"];  
-					 
-					 $ProdTotal = $_SESSION["shopping_cartDp"][$keys]["quantity"] * $_SESSION["shopping_cartDp"][$keys]["price"];
-					
-					
-                }  
-           } 		
+		echo cart_alert($status);
+		echo '<div class="cart_div">
+					<a href="' . $cfg['cartPage'] . '"><img src="assets/images/Excel.png" width="50"/> <span>' . count($cart) . '</span></a>
+					</div>';
+		exit;
+	}
 
-			      $order_table .= '  
-           
-           <table class="table table-bordered table-striped" data-page-length="200" id="example">  
-                <tr>
-					<th></th>
-					<th>ITEM NAME</th>
-					<th>SIZE</th>
-					<th>QUANTITY</th>
-					<th>UNIT PRICE</th>
-					<th>ITEMS TOTAL</th>
-					<th>REMOVE</th>
-					</tr>	
-           ';  
-      if(!empty($_SESSION["shopping_cartDp"]))  
-      {  
-           $total = 0;  
-           
-		   
-           foreach($_SESSION["shopping_cartDp"] as $keys => $values)  
-           {  
-                $order_table .= '  
-                     <tr>  
-                          <td><img src='. str_replace(" ", '%20', $values["image"]).' width="50" height="40" /></td>
-                          <td>'.$values["name"].'</td> 
-						  <td>'.$values["size"].'</td>	
-						  
+	$lineKey = isset($_POST['line']) ? (string) $_POST['line'] : '';
+	if (!isset($cart[$lineKey])) {
+		cart_table_response($type, 'This line is no longer in the cart.');
+	}
 
-						  <td>
-						 <div class="col-xs-6"> 
+	// Quantity change (JSON response: refreshed cart table)
+	if ($kind === 'quantity') {
+		$qty = qt_parse_qty(isset($_POST['quantity']) ? $_POST['quantity'] : '');
+		if ($qty === null) {
+			cart_table_response($type, 'Quantity must be a whole number from 1 to ' . QT_MAX_QTY . '.');
+		}
+		$cart[$lineKey]['quantity'] = $qty;
+		qt_cart_set($type, $cart);
+		cart_table_response($type);
+	}
 
-							<input type="hidden" name="name" value="'.$values["name"].'" />
-							<input type="hidden" name="action"  value="change" />
-							
-							<input type="number" class="form-control col-md-4 quantityDP" name="quantity" pattern="[0-9]{3}" value="'.$values["quantity"].'" data-product_id="'.$values["id"].'" autocomplete="off"/>
-							</div>
-						  </td>
-						  <td>&#8377 ' .$values["price"].'</td>
-						  <td>&#8377 '.$values["price"]*$values["quantity"].'</td>
-						  <td>
-							<button name="delete" class="btn btn-danger btn-xs delete" id="'.$values["id"].'"> X </button>
-						</td>  
-					</tr>
-						  
-                          
-                ';  
-                $total = $total + ($values["quantity"] * $values["price"]);  
-                
-           }  
-		   
-           $order_table .= ' 
-                <tr>
-			<td colspan="6" align="right">
-			<strong>TOTAL: &#8377; ' .$total.'</strong>
-			</td>
-			</tr>
-           ';  
-      }  
-      $order_table .= '</table>';  
-      $output = array(  
-           'order_table'     =>     $order_table 
-           
-      );  
-      echo json_encode($output);  
+	// Remove line (JSON response: refreshed cart table)
+	unset($cart[$lineKey]);
+	qt_cart_set($type, $cart);
+	cart_table_response($type);
+}
 
-		   
-   }  
-	  
-// Remove Product DP	  
-	  if($_POST["action"] == "removeDP")  
-      {  
-           foreach($_SESSION["shopping_cartDp"] as $keys => $values)  
-           {  
-                if($values["id"] == $_POST["id"])  
-                {  
-                     unset($_SESSION["shopping_cartDp"][$keys]);  
-                     //$message = '<label class="text-success">Product Removed</label>';  
-                }  
-           }  
-		   
-		   			      $order_table .= '  
-           
-           <table id="example" class="table table-bordered table-striped" data-page-length="200"> 
-		   <thead>
-                <tr>
-					<th></th>
-					<th>ITEM NAME</th>
-					<th>SIZE</th>
-					<th>QUANTITY</th>
-					<th>UNIT PRICE</th>
-					<th>ITEMS TOTAL</th>
-					<th>REMOVE</th>
-					</tr>
-			</thead>
-					
-           ';  
-      if(!empty($_SESSION["shopping_cartDp"]))  
-      {  
-           $total = 0;  
-           
-		   
-           foreach($_SESSION["shopping_cartDp"] as $keys => $values)  
-           {  
-                $order_table .= '  
-                     <tr>  
-                          <td><img src='. $values["image"].' width="50" height="40" /></td>
-                          <td>'.$values["name"].'</td> 
-						  <td>'.$values["size"].'</td>	
-						  <td>
-							<input type="number" class="form-control col-md-4 quantityDP" name="quantity" pattern="[0-9]{3}" value="'.$values["quantity"].'" data-product_id="'.$values["id"].'" autocomplete="off"/>
-						  </td>
-						  <td>&#8377 ' .$values["price"].'</td>
-						  <td>&#8377 '.$values["price"]*$values["quantity"].'</td>
-						  <td>
-							<button name="delete" class="btn btn-danger btn-xs delete" id="'.$values["id"].'"> X </button>
-						</td>  
-					</tr>
-						  
-                          
-                ';  
-                $total = $total + ($values["quantity"] * $values["price"]);  
-                
-           }  
-		   
-           $order_table .= ' 
-                <tr>
-			<td colspan="6" align="right">
-			<strong>TOTAL: &#8377; ' .$total.'</strong>
-			</td>
-			</tr>
-           ';  
-      }  
-      $order_table .= '</table>';  
-      $output = array(  
-           'order_table'     =>     $order_table 
-           
-      );  
-      echo json_encode($output);  
+// Discard the cart and any quotation being edited, then start a new one (form post).
+if ($action === 'new_quotation') {
+	$type = isset($_POST['type']) ? (string) $_POST['type'] : '';
+	$cfg = qt_config($type);
+	if ($cfg === null) {
+		qt_json_exit(400, array('success' => false, 'error' => 'Unknown quotation type.'));
+	}
+	qt_clear_state($type);
+	qt_flash_set('Started a new ' . $type . ' quotation.', 'success');
+	qt_redirect($cfg['create']);
+}
 
+// Choose the price list (state) for a new quotation (form post). Only while the cart is empty.
+if ($action === 'set_price_state') {
+	$type = isset($_POST['type']) ? (string) $_POST['type'] : '';
+	$cfg = qt_config($type);
+	if ($cfg === null) {
+		qt_json_exit(400, array('success' => false, 'error' => 'Unknown quotation type.'));
+	}
+	$state = isset($_POST['state']) ? (string) $_POST['state'] : '';
+	$states = qt_price_states($connect);
+	if ($state !== '' && !isset($states[$state])) {
+		qt_flash_set('That price list does not exist.');
+	} elseif (count(qt_cart_get($type)) > 0 || qt_editing_id($type) !== null) {
+		qt_flash_set('The price list cannot be changed after products are added. Start a new quotation to use another price list.');
+	} else {
+		qt_set_price_state($type, $state);
+		qt_flash_set('Price list for this ' . $type . ' quotation: ' . qt_price_state_name($connect, $state) . '.', 'success');
+	}
+	qt_redirect($cfg['create']);
+}
 
- }  
- 
- 
- 
+// Delete one of the user's own quotations (JSON response).
+if ($action === 'delete_quotation') {
+	$type = isset($_POST['type']) ? (string) $_POST['type'] : '';
+	list($row, $error) = qt_fetch_owned_quotation($connect, isset($_POST['id']) ? $_POST['id'] : '', $type);
+	if ($error !== null) {
+		qt_json_exit(404, array('success' => false, 'error' => $error));
+	}
+	$ok = mysqli_query($connect, "DELETE FROM tbl_quotation WHERE q_id = " . (int) $row['q_id']
+		. " AND q_user = '" . mysqli_real_escape_string($connect, $_SESSION['username']) . "'");
+	if (!$ok) {
+		qt_json_exit(500, array('success' => false, 'error' => 'The quotation could not be deleted.'));
+	}
+	if (qt_editing_id($type) === (int) $row['q_id']) {
+		qt_clear_state($type);
+	}
+	qt_json_exit(200, array('success' => true));
+}
 
-
-
-// Quantity Change MRP
-		$order_tableMRP = '';  
-
-
-	if($_POST["action"] == "quantityMRP_change")  
-      {  
-		
-           foreach($_SESSION["shopping_cartMRP"] as $keys => $values)  
-           {  
-                if($_SESSION["shopping_cartMRP"][$keys]['id'] == $_POST["id"])  
-                {  
-                     $_SESSION["shopping_cartMRP"][$keys]['quantity'] = $_POST["quantity"];  
-					 
-					 $ProdTotal = $_SESSION["shopping_cartMRP"][$keys]["quantity"] * $_SESSION["shopping_cartMRP"][$keys]["price"];
-					
-					
-                }  
-           } 		
-
-			      $order_tableMRP .= '  
-           
-           <table class="table table-bordered table-striped" data-page-length="200" id="example">  
-                <tr>
-					<th></th>
-					<th>ITEM NAME</th>
-					<th>SIZE</th>
-					<th>QUANTITY</th>
-					<th>UNIT PRICE</th>
-					<th>ITEMS TOTAL</th>
-					<th>REMOVE</th>
-					</tr>	
-           ';  
-      if(!empty($_SESSION["shopping_cartMRP"]))  
-      {  
-           $total = 0;  
-           
-		   
-           foreach($_SESSION["shopping_cartMRP"] as $keys => $values)  
-           {  
-                $order_tableMRP .= '  
-                     <tr>  
-                          <td><img src='. $values["image"].' width="50" height="40" /></td>
-                          <td>'.$values["name"].'</td> 
-						  <td>'.$values["size"].'</td>	
-						  <td>
-							<input type="number" class="form-control col-md-4 quantityMRP" name="quantity" pattern="[0-9]{3}" value="'.$values["quantity"].'" data-product_id="'.$values["id"].'" autocomplete="off"/>
-						  </td>
-						  <td>&#8377 ' .$values["price"].'</td>
-						  <td>&#8377 '.$values["price"]*$values["quantity"].'</td>
-						  <td>
-							<button name="delete" class="btn btn-danger btn-xs deleteMRP" id="'.$values["id"].'"> X </button>
-						</td>  
-					</tr>
-						  
-                          
-                ';  
-                $total = $total + ($values["quantity"] * $values["price"]);  
-                
-           }  
-		   
-           $order_tableMRP .= ' 
-                <tr>
-			<td colspan="6" align="right">
-			<strong>TOTAL: &#8377; ' .$total.'</strong>
-			</td>
-			</tr>
-           ';  
-      }  
-      $order_tableMRP .= '</table>';  
-      $output = array(  
-           'order_tableMRP'     =>     $order_tableMRP 
-           
-      );  
-      echo json_encode($output);  
-
-		   
-   }  
-	  
-// Remove Product MRP	  
-	  if($_POST["action"] == "removeMRP")  
-      {  
-           foreach($_SESSION["shopping_cartMRP"] as $keys => $values)  
-           {  
-                if($values["id"] == $_POST["id"])  
-                {  
-                     unset($_SESSION["shopping_cartMRP"][$keys]);  
-                     //$message = '<label class="text-success">Product Removed</label>';  
-                }  
-           }  
-		   
-		   			      $order_tableMRP .= '  
-           
-           <table id="example" class="table table-bordered table-striped" data-page-length="200"> 
-		   <thead>
-                <tr>
-					<th></th>
-					<th>ITEM NAME</th>
-					<th>SIZE</th>
-					<th>QUANTITY</th>
-					<th>UNIT PRICE</th>
-					<th>ITEMS TOTAL</th>
-					<th>REMOVE</th>
-					</tr>
-			</thead>
-					
-           ';  
-      if(!empty($_SESSION["shopping_cartMRP"]))  
-      {  
-           $total = 0;  
-           
-		   
-           foreach($_SESSION["shopping_cartMRP"] as $keys => $values)  
-           {  
-                $order_tableMRP .= '  
-                     <tr>  
-                          <td><img src='. $values["image"].' width="50" height="40" /></td>
-                          <td>'.$values["name"].'</td> 
-						  <td>'.$values["size"].'</td>	
-						  <td>
-							<input type="number" class="form-control col-md-4 quantityMRP" name="quantity" pattern="[0-9]{3}" value="'.$values["quantity"].'" data-product_id="'.$values["id"].'" autocomplete="off"/>
-						  </td>
-						  <td>&#8377 ' .$values["price"].'</td>
-						  <td>&#8377 '.$values["price"]*$values["quantity"].'</td>
-						  <td>
-							<button name="delete" class="btn btn-danger btn-xs deleteMRP" id="'.$values["id"].'"> X </button>
-						</td>  
-					</tr>
-						  
-                          
-                ';  
-                $total = $total + ($values["quantity"] * $values["price"]);  
-                
-           }  
-		   
-           $order_tableMRP .= ' 
-                <tr>
-			<td colspan="6" align="right">
-			<strong>TOTAL: &#8377; ' .$total.'</strong>
-			</td>
-			</tr>
-           ';  
-      }  
-      $order_tableMRP .= '</table>';  
-      $output = array(  
-           'order_tableMRP'     =>     $order_tableMRP 
-           
-      );  
-      echo json_encode($output);  
-
-
- }  
- 
- 
- 
-
-
-?>
+qt_json_exit(400, array('success' => false, 'error' => 'Unknown action.'));

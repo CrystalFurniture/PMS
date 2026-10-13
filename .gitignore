@@ -9,3 +9,13 @@ Download/**/*.pdf
 
 # Product images (kept on server only)
 Category/
+
+# AI assistant: secrets, uploads and drafts live outside the repository
+ai_config.php
+pms_private/
+ai_storage/
+
+# Benchmark data and local config (customer samples, even anonymised, stay out of Git)
+benchmark/samples/
+benchmark/results/
+benchmark/*.local.php

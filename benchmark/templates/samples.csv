@@ -1,0 +1,7 @@
+sample_id,input_type,language,text_file,image_files,description,anonymised_by,anonymised_on
+S01,handwritten_photo,en,,list.jpg,Handwritten list with exact model codes and clear quantities,,
+S02,handwritten_photo,mixed,,page1.jpg;page2.jpg,Two-page handwritten list; one line crossed out,,
+S03,whatsapp_screenshot,hi,,chat.png,Screenshot of Hindi message with quantities in words,,
+S04,text,mr,message.txt,,Pasted Marathi message with generic item names,,
+S05,text,en,message.txt,,Pasted English message with sizes and a total amount,,
+S06,mixed,mixed,message.txt,photo.jpg,Message text plus photo; one quantity missing,,

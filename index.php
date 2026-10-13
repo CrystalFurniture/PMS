@@ -49,103 +49,55 @@
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
+  <?php include 'templates/theme_head.php'; ?>
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Log in</title>
-  <!-- Tell the browser to be responsive to screen width -->
-  <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
-  <!-- Bootstrap 3.3.7 -->
-  
-  
+  <title>Sign in · Crystal Furniture</title>
+  <meta content="width=device-width, initial-scale=1" name="viewport">
   <link rel="stylesheet" href="assets/bower_components/bootstrap/dist/css/bootstrap.min.css">
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="assets/bower_components/font-awesome/css/font-awesome.min.css">
-  <!-- Ionicons -->
-  <link rel="stylesheet" href="assets/bower_components/Ionicons/css/ionicons.min.css">
-  <!-- Theme style -->
-  <link rel="stylesheet" href="assets/dist/css/AdminLTE.min.css">
-  <!-- iCheck -->
-  <link rel="stylesheet" href="assets/plugins/iCheck/square/blue.css">
-
-  <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
-  <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-  <!--[if lt IE 9]>
-  <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
-  <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-  <![endif]-->
-
-  <!-- Google Font -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
-  
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="css/pms-theme.css?v=7">
 </head>
-<body class="hold-transition login-page">
-<div class="login-box">
-  <div class="login-logo">
-
-  <?php if(isset($_GET['failmsg'])):
-
-			 echo "<p class='text-center m-t-md' style='color:red'>".unserialize(base64_decode($_GET['failmsg']))."</p>";
-
-			elseif(isset($_GET['msg'])):
-
-				echo "<p class='text-center m-t-md' style='color:green'>".unserialize(base64_decode($_GET['msg']))."</p>";
-
-			endif;
-
-			?>
+<body>
+<?php
+	// Legacy ?msg= / ?failmsg= values: decoded without allowing objects, then escaped.
+	$loginNote = function ($encoded) {
+		$text = @unserialize(base64_decode((string) $encoded), array('allowed_classes' => false));
+		return is_string($text) ? htmlspecialchars($text, ENT_QUOTES, 'UTF-8') : '';
+	};
+?>
+<?php $pmsToggleClass = 'pms-login-toggle'; include 'templates/theme_toggle.php'; ?>
+<main class="pms-login">
+  <div class="pms-login-brand">
+    <div class="pms-login-logo"><span class="pms-mark">CF</span> Crystal Furniture</div>
+    <div>
+      <h1>Quotations for dealers and retail, in one place.</h1>
+      <p>Build DP and MRP quotations from the catalogue, apply state price lists, and export to PDF or Excel.</p>
+    </div>
+    <small>&copy; 2017&ndash;<?php echo date('Y'); ?> Crystal Furniture</small>
   </div>
-  <!-- /.login-logo -->
-  <div class="login-box-body">
-    <p class="login-box-msg">Sign in to start your session</p>
-
-   
+  <div class="pms-login-form">
     <form action="#" method="post">
-      <div class="form-group has-feedback">
-        <input type="email" class="form-control" name="email" id="email" placeholder="Email" autocomplete="off">
-        <span class="glyphicon glyphicon-envelope form-control-feedback"></span>
+      <div>
+        <h2>Sign in</h2>
+        <p class="text-muted" style="margin:6px 0 0">Use your work email.</p>
       </div>
-      <div class="form-group has-feedback">
-        <input type="password" class="form-control" name="password" id="password" placeholder="Password" autocomplete="off">
-        <span class="glyphicon glyphicon-lock form-control-feedback"></span>
-      </div>
-      <div class="row">
-        <div class="col-xs-8">
-          <div class="checkbox icheck">
-            <!-- <label>
-              <input type="checkbox"> Remember Me
-            </label> -->
-          </div>
-        </div>
-        <!-- /.col -->
-        <div class="col-xs-4">
-          <button type="submit" class="btn btn-primary btn-block btn-flat" name="submit">Sign In</button>
-        </div>
-        <!-- /.col -->
-      </div>
+      <?php if (isset($_GET['failmsg'])): ?>
+        <div class="alert alert-danger" role="alert"><?php echo $loginNote($_GET['failmsg']); ?></div>
+      <?php elseif (isset($_GET['msg'])): ?>
+        <div class="alert alert-success" role="status"><?php echo $loginNote($_GET['msg']); ?></div>
+      <?php endif; ?>
+      <label for="email">Email
+        <input type="email" class="form-control" name="email" id="email" autocomplete="username" required>
+      </label>
+      <label for="password">Password
+        <input type="password" class="form-control" name="password" id="password" autocomplete="current-password" required>
+      </label>
+      <button type="submit" class="btn btn-primary btn-block" name="submit">Sign in</button>
     </form>
-
   </div>
-  <!-- /.login-box-body -->
-</div>
-<!-- /.login-box -->
-
-<!-- jQuery 3 -->
-
-<script src="assets/bower_components/jquery/dist/jquery.min.js"></script>
-<!-- Bootstrap 3.3.7 -->
-<script src="assets/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
-<!-- iCheck -->
-<script src="assets/plugins/iCheck/icheck.min.js"></script>
-<script>
-  $(function () {
-    $('input').iCheck({
-      checkboxClass: 'icheckbox_square-blue',
-      radioClass: 'iradio_square-blue',
-      increaseArea: '20%' // optional
-    });
-  });
-</script>
+</main>
 </body>
 </html>

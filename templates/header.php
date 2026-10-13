@@ -4,6 +4,7 @@ include_once('templates/permission.php');
 <!DOCTYPE html>
 <html>
 	<head>
+		  <?php include __DIR__ . '/theme_head.php'; ?>
 		  <meta charset="utf-8">
 		  <meta http-equiv="X-UA-Compatible" content="IE=edge">
 		  <title>Product Management System</title>
@@ -50,6 +51,7 @@ include_once('templates/permission.php');
 
 		  <!-- Google Font -->
 		  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
+		  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap">
 
 		  <!-- jQuery 3 -->
 		  <script src="assets/bower_components/jquery/dist/jquery.min.js"></script>
@@ -86,8 +88,6 @@ include_once('templates/permission.php');
 		  <script src="assets/bower_components/select2/dist/js/select2.full.min.js"></script>
 		  <!-- AdminLTE App -->  
 		  <script src="assets/dist/js/adminlte.min.js"></script>
-		  <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
-		  <script src="assets/dist/js/pages/dashboard.js"></script>
 		  <!-- AdminLTE for demo purposes -->
 		  <script src="assets/dist/js/demo.js"></script>
 		  <script src="assets/plugins/fileinput/fileinput.min.js"></script>
@@ -109,9 +109,6 @@ include_once('templates/permission.php');
 		div#manageTable_filter {
 			text-align: unset;
 		}
-		input[type=search] {
-			width: 1000px !important;
-		}
 
 		.cart_div span {
 			font-size: 14px;
@@ -129,6 +126,8 @@ include_once('templates/permission.php');
 		}
 
 		</style>
+		<!-- Crystal PMS theme (loaded last so it wins over AdminLTE) -->
+		<link rel="stylesheet" href="css/pms-theme.css?v=10">
 
 	</head>
 <body class="hold-transition skin-blue sidebar-mini">

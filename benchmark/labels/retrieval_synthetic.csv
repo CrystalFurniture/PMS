@@ -1,0 +1,25 @@
+case_id,source,requirement,english_terms,product_code,finish,dimensions,expected_ids,note
+S01,synthetic,Ariana office table,office table Ariana,,,,1469,series + type
+S02,synthetic,Ballie OT 1800,office table Ballie,Ballie-OT,,1800,1472,code given
+S03,synthetic,crockery unit wenge,crockery unit,,wenge,,1309,type word only in description
+S04,synthetic,CMF-101 3 door wardrobe walnut,wardrobe 3 door,CMF-101,walnut,,621,code shared by several products
+S05,synthetic,MDF polished dressing table walnut,dressing table MDF polished,,walnut,,622,
+S06,synthetic,king size hydraulic bed CMF 101 walnut,king size bed hydraulic,CMF-101,walnut,,618,king = 6 x 6 1/2
+S07,synthetic,queen bed with hydraulic CMF-101,queen size bed hydraulic,CMF-101,,,617,queen = 5 x 6 1/2
+S08,synthetic,centre table wenge 1000 wide,centre table,,wenge,1000,1314,size decides between centre tables
+S09,synthetic,back storage for ariana table,back storage Ariana,,,,1471,
+S10,synthetic,Altis table with storage,office table with storage Altis,,,,1468,
+S11,synthetic,Aristo office table cairo walnut,office table Aristo,,cairo walnut,,1488,
+S12,synthetic,RUBY bed with side drawer queen,bed side drawer Ruby queen,,,,21,
+S13,synthetic,Justin dressing table,dressing table Justin,,,,586,
+S14,synthetic,Sterling oak king bed hydraulic,bed hydraulic Sterling oak king,,,,590,
+S15,synthetic,Austin dressing table black and white,dressing table Austin,,black white,,605,
+S16,synthetic,Candy single bed with trolley,single bed trolley Candy,,,,609,
+S17,synthetic_ambiguous,sofa cum bed walnut wenge,sofa cum bed,,walnut wenge,,79|389|391|575|577|1573|38084|38862|39282|39284|40808|41222|41224,ambiguous: every quotable product with the stated type and finish (SQL); correct outcome is needs review
+S18,synthetic,Platina wenge king bed with top storage,bed top storage Platina wenge king,,wenge,,93,
+S19,synthetic,MAYA teak dressing table,dressing table Maya teak,,teak,,42,
+S20,synthetic,क्रॉकरी यूनिट वेंगे,crockery unit,,wenge,,1309,Hindi with extraction terms
+S21,synthetic,क्रॉकरी यूनिट वेंगे,,,,,1309,Hindi raw (no extraction terms)
+S22,synthetic,किंग साइज़ बेड हाइड्रोलिक वॉलनट CMF-101,king size bed hydraulic,CMF-101,walnut,,618,Hindi with code
+S23,synthetic_ambiguous,ड्रेसिंग टेबल अक्रोड रंग,dressing table,,walnut,,18|89|110|136|323|337|357|396|402|408|435|458|465|502|507|512|518|526|548|573|593|622|1583|1589|1595|1599|1605|1681|1699|1980|1985|39174|39198|39260|39276|39346|39510|39514|39530|39674|39766|40530|40532|40554|41072|41084|41110|41367|41417|41419,ambiguous: every quotable product with the stated type and finish (SQL); correct outcome is needs review
+S24,synthetic_ambiguous,almari 3 darwaze walnut,wardrobe 3 door,,walnut,,16|87|108|134|135|322|335|355|356|395|400|406|433|456|462|463|464|501|506|511|517|524|525|546|547|571|591|621|660|1582|1588|1593|1602|1604|1679|1697|2053|2058|2088|39172|39190|39192|39258|39342|39496|39500|39506|39526|39670|39998|40528|40550|40798|41070|41080|41082|41108|41363|41413,ambiguous: every quotable product with the stated type and finish (SQL); correct outcome is needs review

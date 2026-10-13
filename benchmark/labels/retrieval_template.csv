@@ -1,0 +1,2 @@
+case_id,source,requirement,english_terms,product_code,finish,dimensions,expected_ids,note
+R001,real,"<line exactly as the customer wrote it, any language>","<optional: English terms as the extraction gave them>",,,,"<correct product id(s), | separated>","<who labelled it, date>"
