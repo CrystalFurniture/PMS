@@ -464,6 +464,27 @@ function qt_submit_token($type)
 }
 
 /**
+ * Save an edited quotation as its next revision: a new row with the same quotation number, type, owner and
+ * original date, revision number one above the highest saved for that number (R1, R2, ...), and today's
+ * revision date. The row that was edited, the original and any other revision are left unchanged, so every
+ * version can still be opened. Returns the new q_id or null.
+ */
+function qt_insert_revision($connect, $row, $clientName, $discount, $items)
+{
+	$esc = function ($v) use ($connect) { return mysqli_real_escape_string($connect, (string) $v); };
+	$where = "q_num = '" . $esc($row['q_num']) . "' AND q_type = '" . $esc($row['q_type']) . "' AND q_user = '" . $esc($row['q_user']) . "'";
+	mysqli_query($connect, 'START TRANSACTION');
+	$max = mysqli_query($connect, "SELECT MAX(q_revNum) FROM tbl_quotation WHERE $where FOR UPDATE");
+	$next = ($max ? (int) mysqli_fetch_row($max)[0] : (int) $row['q_revNum']) + 1;
+	$ok = mysqli_query($connect, "INSERT INTO tbl_quotation (q_num, q_revNum, q_name, q_discount, q_items, q_date, q_revDate, q_user, q_type) VALUES ('"
+		. $esc($row['q_num']) . "', " . $next . ", '" . $esc($clientName) . "', '" . $esc($discount) . "', '" . $esc($items) . "', '"
+		. $esc($row['q_date']) . "', '" . date('d-m-Y') . "', '" . $esc($row['q_user']) . "', '" . $esc($row['q_type']) . "')");
+	$id = $ok ? (int) mysqli_insert_id($connect) : null;
+	mysqli_query($connect, $ok ? 'COMMIT' : 'ROLLBACK');
+	return $id;
+}
+
+/**
  * Next quotation number, inserted while holding the counter lock so two
  * saves cannot take the same number. Format and counter file are unchanged:
  * Cry/{yy}-{yy+1}/Q-{n} from count.txt. Returns the new q_id or null.
@@ -586,12 +607,8 @@ function qt_handle_save($connect, $type)
 			qt_flash_set($error . ' The cart was not saved.');
 			qt_redirect($back);
 		}
-		$ok = mysqli_query($connect, "UPDATE tbl_quotation SET q_name = '" . mysqli_real_escape_string($connect, $clientName)
-			. "', q_discount = '" . mysqli_real_escape_string($connect, $discount)
-			. "', q_items = '" . mysqli_real_escape_string($connect, $items)
-			. "', q_revNum = q_revNum+1, q_revDate = '" . date('d-m-Y') . "' WHERE q_id = " . (int) $editing
-			. " AND q_user = '" . mysqli_real_escape_string($connect, $_SESSION['username']) . "'");
-		$savedId = ($ok && mysqli_affected_rows($connect) === 1) ? $editing : null;
+		// A revision is a new row; the original and earlier revisions are kept as they were.
+		$savedId = qt_insert_revision($connect, $row, $clientName, $discount, $items);
 	} else {
 		$savedId = qt_insert_new_quotation($connect, $type, $clientName, $discount, $items);
 	}

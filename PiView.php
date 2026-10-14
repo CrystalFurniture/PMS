@@ -74,6 +74,7 @@ th{
 	<span>&nbsp; </span>
 		<span>&nbsp; </span>
 			<input type="button"  class="btn btn-success btn-large right" id="btnExport" value=" Export to Excel " style="Margin-bottom: 10px;"/>
+			<a class="btn btn-primary" id="btnPdf" href="PiPdf.php?id=<?= (int) $doc['id'] ?>" style="Margin-bottom: 10px;">Download PDF</a>
 			<?php if (($cv = mysqli_query($connect, "SELECT 1 FROM ai_conversations WHERE id = '" . mysqli_real_escape_string($connect, (string) $snap['conversation_id']) . "'")) && mysqli_num_rows($cv) > 0) { ?>
 			<a class="btn btn-default" href="AiAssistant.php?conv=<?= qt_e($snap['conversation_id']) ?>" style="Margin-bottom: 10px;">Back to the conversation</a>
 			<?php } ?>

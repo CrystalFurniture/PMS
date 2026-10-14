@@ -11,10 +11,10 @@ error_reporting(E_ALL);
 //	$user       = "crystalsaleadmin";
 //	$pass       = "Crystal!@#$";
 	
-	$connect    = mysqli_connect($host, $user, $pass, $database) or die("Error : ".mysql_error());		
+	$connect    = mysqli_connect($host, $user, $pass, $database) or die("Error : ".mysqli_connect_error());		
 	
 //define('TITLE', 'Crystal Furniture');
-define('URL', '192.168.1.227/');
+define('URL', 'localhost/');
 
 date_default_timezone_set('Asia/Calcutta'); 
 	

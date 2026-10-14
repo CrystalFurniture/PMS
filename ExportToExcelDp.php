@@ -63,6 +63,7 @@ th{
 		
 			<!--<button class="btn btn-success btn-large right" onclick="printDiv();">Print it</button>-->
 			<input type="button"  class="btn btn-success btn-large right" id="btnExport" value=" Export to Excel " style="Margin-bottom: 10px;"/>
+			<a class="btn btn-primary" id="btnPdf" href="QuotationPdf.php?id=<?= (int) $row['q_id'] ?>&amp;type=DP" style="Margin-bottom: 10px;">Download PDF</a>
 			<span>&nbsp; </span>
 			<div id="excel">
 <table id="example" class="table table-bordered" >

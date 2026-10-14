@@ -14,7 +14,10 @@ error_reporting(0);
 
 		// The user's own quotations, DP and MRP together, newest first.
 		$quotes = array();
-		$result = mysqli_query($connect, "select * from tbl_quotation where q_user = '" . mysqli_real_escape_string($connect, $_SESSION['username']) . "' AND q_type IN ('DP', 'MRP') ORDER BY q_id DESC");
+		// Every revision is its own row (Original, R1, R2, ...); a quotation's revisions are listed together, newest first,
+		// and the quotations by their latest change.
+		$result = mysqli_query($connect, "select * from tbl_quotation where q_user = '" . mysqli_real_escape_string($connect, $_SESSION['username']) . "' AND q_type IN ('DP', 'MRP')
+			ORDER BY MAX(q_id) OVER (PARTITION BY q_num, q_type) DESC, q_revNum DESC, q_id DESC");
 		while ($result && ($row = mysqli_fetch_assoc($result))) {
 			$quotes[] = $row;
 		}
