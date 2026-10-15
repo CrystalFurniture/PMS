@@ -1978,6 +1978,9 @@ function pi_save_to_quotations($connect, $docId)
 		}
 		$line['price'] = $l['rate'];
 		$line['quantity'] = (int) $l['quantity'];
+		if (isset($l['rate_type']) && $l['rate_type'] === 'NET') {
+			$line['net'] = 1;   // NET price: no discount when the quotation is converted to a sale order
+		}
 		$key = (string) $l['product']['id'];
 		while (isset($items[$key])) {
 			$key .= '-' . $l['n'];   // the same product on two PI lines stays two lines

@@ -454,6 +454,22 @@ function qt_fetch_owned_quotation($connect, $qid, $type)
 	return array($row, null);
 }
 
+/** Tally sale order page that opens an approved quotation as an order (tallyTest/api/import_quotation.php). */
+function qt_sale_order_url($qid)
+{
+	return 'http://192.168.1.111/tallyTest/api/import_quotation.php?id=' . (int) $qid;
+}
+
+/** Whether tbl_quotation has the approval columns (added by cli/migrate_pi.php). */
+function qt_has_status($connect)
+{
+	static $has = null;
+	if ($has === null) {
+		$has = ($c = mysqli_query($connect, "SHOW COLUMNS FROM tbl_quotation LIKE 'q_status'")) && mysqli_num_rows($c) > 0;
+	}
+	return $has;
+}
+
 /** Submit token for the cart form; consumed by a successful save. */
 function qt_submit_token($type)
 {

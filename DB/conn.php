@@ -4,8 +4,8 @@ error_reporting(E_ALL);
 @session_start();
 	//database configuration
 
-	$host       = "localhost";
-	$user       = "root";
+	$host       = "192.168.1.111";
+	$user       = "RemoteUser";
 	$pass       = "";
 	$database   = "pms";
 //	$user       = "crystalsaleadmin";

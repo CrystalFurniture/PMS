@@ -120,6 +120,20 @@ function qt_pdf_html($row, $items, $rep, $cacheDir)
 /** Send the quotation as a PDF download, e.g. Cry-26-27-Q-2725-R2-Client.pdf. */
 function qt_pdf_send($row, $items, $rep, $cacheDir)
 {
+	list($pdf, $file) = qt_pdf_build($row, $items, $rep, $cacheDir);
+	$pdf->Output($file, 'D');
+}
+
+/** The same PDF as bytes, for sending by email/WhatsApp. Returns array(bytes, file name). */
+function qt_pdf_bytes($row, $items, $rep, $cacheDir)
+{
+	list($pdf, $file) = qt_pdf_build($row, $items, $rep, $cacheDir);
+	return array($pdf->Output($file, 'S'), $file);
+}
+
+/** Returns array(TCPDF document, file name). */
+function qt_pdf_build($row, $items, $rep, $cacheDir)
+{
 	$label = 'Quotation ' . $row['q_num'] . ((int) $row['q_revNum'] > 0 ? ' R' . (int) $row['q_revNum'] : '');
 	$pdf = new PiPdfDocument('P', 'mm', 'A4', true, 'UTF-8', false);
 	$pdf->piNumber = $row['q_num'] . ((int) $row['q_revNum'] > 0 ? ' R' . (int) $row['q_revNum'] : '');
@@ -134,5 +148,5 @@ function qt_pdf_send($row, $items, $rep, $cacheDir)
 	$pdf->AddPage();
 	$pdf->writeHTML(qt_pdf_html($row, $items, $rep, $cacheDir), true, false, true, false, '');
 	$name = preg_replace('/[^A-Za-z0-9._-]+/', '-', $row['q_num'] . ((int) $row['q_revNum'] > 0 ? '-R' . (int) $row['q_revNum'] : '') . '-' . $row['q_name']);
-	$pdf->Output(trim(substr($name, 0, 120), '-') . '.pdf', 'D');
+	return array($pdf, trim(substr($name, 0, 120), '-') . '.pdf');
 }

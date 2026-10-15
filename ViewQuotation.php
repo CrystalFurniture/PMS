@@ -28,6 +28,7 @@ error_reporting(0);
 			}
 		}
 		$countMrp = count($quotes) - $countDp;
+		$hasStatus = qt_has_status($connect);
 ?>
   <!-- Content Wrapper. Contains page content -->
   <div class="content-wrapper">
@@ -71,6 +72,7 @@ error_reporting(0);
                 <th style="text-align:right">Total</th>
                 <th>Revision</th>
                 <th>Date</th>
+                <th>Status</th>
                 <th style="text-align:right">Actions</th>
               </tr>
             </thead>
@@ -82,6 +84,7 @@ error_reporting(0);
               $totals = qt_quotation_totals($row);
               $rev = (int) $row['q_revNum'];
               $date = $row['q_revDate'] !== '' ? $row['q_revDate'] : $row['q_date'];
+              $status = $hasStatus ? (string) $row['q_status'] : '';
               $dateSort = preg_match('/^(\d{2})-(\d{2})-(\d{4})$/', (string) $date, $m) ? $m[3] . $m[2] . $m[1] : '';
             ?>
               <tr id="quotation-<?= $id ?>">
@@ -93,10 +96,21 @@ error_reporting(0);
                   title="<?= $totals !== null && $totals[3] > 0 ? qt_e('After ' . $totals[3] . '% discount, before GST') : 'Before GST' ?>"><?= $totals === null ? '&mdash;' : qt_inr($totals[4]) ?></td>
                 <td class="text-muted"><?= $rev > 0 ? 'R' . $rev : 'Original' ?></td>
                 <td class="text-muted" data-order="<?= qt_e($dateSort) ?>"><?= qt_e($date) ?></td>
+                <td><?php if ($status === 'ordered') { ?><span class="pms-badge pms-badge-dp" title="<?= qt_e('Converted ' . $row['q_orderedAt']) ?>">Ordered</span><?php
+                  } elseif ($status === 'approved') { ?><span class="pms-badge pms-badge-mrp" title="<?= qt_e('Approved by ' . $row['q_approvedBy'] . ' ' . $row['q_approvedAt']) ?>">Approved</span><?php
+                  } else { ?><span class="pms-badge pms-badge-warn">Awaiting approval</span><?php } ?></td>
                 <td>
                   <div class="pms-qactions">
                     <a class="btn btn-default btn-sm" href="<?= qt_e($cfg['detail']) ?>?id=<?= $id ?>">Open</a>
                     <a class="btn btn-default btn-sm" href="<?= qt_e($cfg['cartPage']) ?>?id=<?= $id ?>">Edit</a>
+                    <?php if ($hasStatus && $status === '') { ?>
+                    <button type="button" class="btn btn-default btn-sm" onclick="return openSendForm('<?= $type ?>', <?= $id ?>)" aria-label="Send quotation <?= qt_e($row['q_num']) ?>">Send quotation</button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="return setQuotationStatus('approve_quotation', '<?= $type ?>', <?= $id ?>)" aria-label="Approve quotation <?= qt_e($row['q_num']) ?>">Approve</button>
+                    <?php } elseif ($status === 'approved') { ?>
+                    <button type="button" class="btn btn-success btn-sm" onclick="return setQuotationStatus('convert_quotation', '<?= $type ?>', <?= $id ?>)" aria-label="Convert quotation <?= qt_e($row['q_num']) ?> to order">Convert to order</button>
+                    <?php } elseif ($status === 'ordered') { ?>
+                    <a class="btn btn-default btn-sm" href="<?= qt_e(qt_sale_order_url($id)) ?>" target="_blank" rel="noopener">Open sale order</a>
+                    <?php } ?>
                     <button type="button" class="btn btn-danger btn-sm" onclick="return removeQuotation('<?= $type ?>', <?= $id ?>)" aria-label="Delete quotation <?= qt_e($row['q_num']) ?>">Delete</button>
                   </div>
                 </td>
@@ -108,6 +122,42 @@ error_reporting(0);
         </div>
       </div>
     </section>
+
+    <!-- Approve: send the quotation PDF by email and WhatsApp -->
+    <div class="modal fade" tabindex="-1" role="dialog" id="sendModal" aria-labelledby="sendModalTitle">
+      <div class="modal-dialog" role="document">
+        <form class="modal-content" id="sendForm" novalidate>
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="sendModalTitle">Send quotation</h4>
+            <small class="text-muted" id="sendModalSub"></small>
+          </div>
+          <div class="modal-body">
+            <div id="sendMessages" aria-live="polite"></div>
+            <?php foreach (array('cust' => 'Customer', 'sales' => 'Salesperson', 'mgr' => 'Manager (optional)') as $role => $who) { ?>
+            <fieldset style="margin-bottom:6px">
+              <legend style="font-size:14px; font-weight:600; margin-bottom:6px; border:0"><?= $who ?></legend>
+              <div class="row">
+                <div class="form-group col-sm-6">
+                  <label for="send-<?= $role ?>-email">Email<?= $role !== 'mgr' ? ' <span class="text-danger">*</span>' : '' ?></label>
+                  <input type="email" class="form-control" id="send-<?= $role ?>-email" name="<?= $role ?>_email" maxlength="150" autocomplete="off">
+                </div>
+                <div class="form-group col-sm-6">
+                  <label for="send-<?= $role ?>-wa">WhatsApp no.<?= $role !== 'mgr' ? ' <span class="text-danger">*</span>' : '' ?></label>
+                  <input type="tel" class="form-control" id="send-<?= $role ?>-wa" name="<?= $role ?>_wa" maxlength="20" placeholder="10 digit mobile" autocomplete="off">
+                </div>
+              </div>
+            </fieldset>
+            <?php } ?>
+            <p class="text-muted" style="margin:0">The quotation PDF is sent to every filled-in email and WhatsApp number.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="sendSubmit">Send</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
   </div>
   <!-- /.content-wrapper -->
@@ -124,7 +174,7 @@ $(document).ready(function () {
 		bLengthChange: false,
 		autoWidth: false,
 		language: { search: '', searchPlaceholder: 'Search customer or quotation number', emptyTable: 'No quotations yet.', info: 'Showing _START_ to _END_ of _TOTAL_ quotations', infoFiltered: '(of _MAX_)' },
-		columnDefs: [{ targets: [7], orderable: false, searchable: false }]
+		columnDefs: [{ targets: [8], orderable: false, searchable: false }]
 	});
 	$('#manageQuotations_filter input').attr('aria-label', 'Search quotations');
 
@@ -135,6 +185,117 @@ $(document).ready(function () {
 		table.column(2).search(type ? '^' + type + '$' : '', true, false).draw();
 	});
 });
+
+// Send quotation (before approval) opens the send form, with the customer's contacts filled in by the server;
+// submitting it sends the PDF. Approving is separate and has no form.
+var sendTarget = null;
+
+function sendAlert(kind, text)
+{
+	$('#sendMessages').html($('<div class="alert" role="alert" style="white-space:pre-line"></div>').addClass('alert-' + kind).text(text));
+}
+
+function openSendForm(type, id)
+{
+	sendTarget = { type: type, id: id };
+	$('#sendForm')[0].reset();
+	$('#sendForm .form-group').removeClass('has-error');
+	$('#sendMessages').html('');
+	$('#sendModalSub').text('Loading contacts...');
+	$('#sendSubmit').prop('disabled', true).text('Send');
+	$('#sendModal').modal('show');
+	$.ajax({
+		url: 'action.php',
+		type: 'POST',
+		dataType: 'json',
+		data: { action: 'send_form', type: type, id: id, csrf_token: $('#qt_csrf').val() },
+		success: function(data) {
+			$('#sendModalSub').text(data.title);
+			$.each(data.values, function(name, value) {
+				$('#sendForm [name="' + name + '"]').val(value);
+			});
+			if (!data.ledger) {
+				sendAlert('info', 'This customer was not found in the Tally ledger: enter the customer email and WhatsApp number.');
+			}
+			$('#sendSubmit').prop('disabled', false);
+		},
+		error: function(xhr) {
+			$('#sendModalSub').text('');
+			sendAlert('warning', (xhr.responseJSON && xhr.responseJSON.error) ? xhr.responseJSON.error : 'Something went wrong. Please reload the page and try again.');
+		}
+	});
+	return false;
+}
+
+$(document).on('submit', '#sendForm', function(e) {
+	e.preventDefault();
+	if (!sendTarget) {
+		return false;
+	}
+	var data = $(this).serializeArray();
+	data.push({ name: 'action', value: 'send_quotation' }, { name: 'type', value: sendTarget.type }, { name: 'id', value: sendTarget.id },
+		{ name: 'csrf_token', value: $('#qt_csrf').val() });
+	$('#sendForm .form-group').removeClass('has-error');
+	$('#sendSubmit').prop('disabled', true).text('Sending...');
+	$.ajax({
+		url: 'action.php',
+		type: 'POST',
+		dataType: 'json',
+		data: data,
+		success: function(res) {
+			if (res.failed) {
+				sendAlert('warning', 'Not everything was sent:\n' + res.summary);
+				$('#sendSubmit').text('Send');
+				$('#sendModal').one('hidden.bs.modal', function() { location.reload(); });
+				return;
+			}
+			location.reload();
+		},
+		error: function(xhr) {
+			var res = xhr.responseJSON || {};
+			$.each(res.fields || {}, function(name) {
+				$('#sendForm [name="' + name + '"]').closest('.form-group').addClass('has-error');
+			});
+			sendAlert('warning', res.error ? res.error : 'Something went wrong. Please reload the page and try again.');
+			$('#sendSubmit').prop('disabled', false).text('Send');
+		}
+	});
+	return false;
+});
+
+function setQuotationStatus(action, type, id)
+{
+	var question = action === 'approve_quotation' ? 'Approve this quotation?' : 'Convert this approved quotation to an order?';
+	if(!confirm(question)) {
+		return false;
+	}
+	// The sale order opens in a new tab; it is opened now, while the click still allows it, and filled in once converted.
+	var orderTab = action === 'convert_quotation' ? window.open('', '_blank') : null;
+	$.ajax({
+		url: 'action.php',
+		type: 'POST',
+		dataType: 'json',
+		data: { action: action, type: type, id: id, csrf_token: $('#qt_csrf').val() },
+		success: function(data) {
+			if (data && data.redirect) {
+				if (orderTab) {
+					orderTab.location.href = data.redirect;
+				} else {
+					window.open(data.redirect, '_blank');
+				}
+			}
+			location.reload();
+		},
+		error: function(xhr) {
+			if (orderTab) {
+				orderTab.close();
+			}
+			var message = (xhr.responseJSON && xhr.responseJSON.error) ? xhr.responseJSON.error : 'Something went wrong. Please reload the page and try again.';
+			$("#messages").html($('<div class="alert alert-warning" role="alert"></div>').text(message));
+		}
+	});
+	return false;
+}
 
 function removeQuotation(type, id)
 {

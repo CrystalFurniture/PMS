@@ -170,4 +170,99 @@ if ($action === 'delete_quotation') {
 	qt_json_exit(200, array('success' => true));
 }
 
+// Send quotation (before approval): send_form returns the six contacts, the customer's filled in from the Tally
+// ledger, salesperson and manager typed in; send_quotation sends the PDF to them. The status is not changed.
+if ($action === 'send_form' || $action === 'send_quotation') {
+	include_once('includes/send_lib.php');
+	if (!qt_has_status($connect)) {
+		qt_json_exit(500, array('success' => false, 'error' => 'Quotation approval is not set up yet: run cli/migrate_pi.php.'));
+	}
+	list($row, $error) = qt_fetch_owned_quotation($connect, isset($_POST['id']) ? $_POST['id'] : '', isset($_POST['type']) ? (string) $_POST['type'] : '');
+	if ($error !== null) {
+		qt_json_exit(404, array('success' => false, 'error' => $error));
+	}
+	$sendCfg = send_config();
+	$tallyDb = isset($sendCfg['tally_db']) ? $sendCfg['tally_db'] : 'tally_io';
+	$ledger = send_ledger_contact($connect, $tallyDb, (string) $row['q_name']);
+
+	if ($action === 'send_form') {
+		qt_json_exit(200, array('success' => true, 'title' => 'Quotation ' . $row['q_num'] . ' - ' . $row['q_name'],
+			'ledger' => $ledger !== null ? $ledger['name'] : '',
+			'values' => array(
+				'cust_email' => $ledger !== null ? $ledger['email'] : '', 'cust_wa' => $ledger !== null ? $ledger['wa'] : '',
+				'sales_email' => '', 'sales_wa' => '', 'mgr_email' => '', 'mgr_wa' => '')));
+	}
+
+	list($contacts, $errors) = send_read_form($_POST);
+	if (count($errors)) {
+		qt_json_exit(422, array('success' => false, 'error' => implode("\n", $errors), 'fields' => $errors));
+	}
+	foreach (array('email', 'wa') as $channel) {
+		$problem = send_config_problem($sendCfg, $channel);
+		if ($problem !== '') {
+			qt_json_exit(500, array('success' => false, 'error' => $problem));
+		}
+	}
+	include_once('includes/ai_provider.php');
+	include_once('includes/ai_import_lib.php');
+	require_once 'includes/quotation_pdf.php';
+	list($ai) = qt_ai_settings();
+	@set_time_limit(300);
+	$items = qt_decode_items($row['q_items']);
+	$rep = array('name' => isset($_SESSION['fullName']) ? trim((string) $_SESSION['fullName']) : '', 'phone' => isset($_SESSION['phone']) ? (string) $_SESSION['phone'] : '',
+		'email' => isset($_SESSION['email']) ? (string) $_SESSION['email'] : '');
+	try {
+		list($pdf, $file) = qt_pdf_bytes($row, $items === null ? array() : $items, $rep, $ai['storage_dir'] !== '' ? $ai['storage_dir'] . '/cache/pdf-images' : '');
+	} catch (Exception $e) {
+		qt_json_exit(500, array('success' => false, 'error' => 'The quotation PDF could not be made, so it was not sent.'));
+	}
+	$number = $row['q_num'] . ((int) $row['q_revNum'] > 0 ? ' R' . (int) $row['q_revNum'] : '');
+	$totals = qt_quotation_totals($row);   // [4] = after discount, before GST; the PDF's final amount adds 18% GST
+	$results = send_document($sendCfg, $contacts, array('label' => 'Quotation ' . $number, 'filename' => $file, 'pdf' => $pdf,
+		'number' => $number, 'total' => $totals !== null ? number_format($totals[4] * 1.18, 2) : '',
+		'names' => array('cust' => $ledger !== null ? $ledger['name'] : '', 'sales' => '', 'mgr' => '')));
+	send_log($connect, 'pms', 'quotation', $number, $_SESSION['username'], $results);
+	$failed = 0;
+	foreach ($results as $r) {
+		$failed += $r[3] ? 0 : 1;
+	}
+	qt_flash_set('Quotation ' . $row['q_num'] . ': ' . ($failed ? $failed . ' of ' . count($results) . ' messages could not be sent; see the details shown.' : 'sent to all ' . count($results) . ' contacts.'),
+		$failed ? 'warning' : 'success');
+	qt_json_exit(200, array('success' => true, 'summary' => send_summary($results), 'failed' => $failed));
+}
+
+// Approve a quotation, then convert an approved one to an order. The status check is in the UPDATE itself.
+if ($action === 'approve_quotation' || $action === 'convert_quotation') {
+	if (!qt_has_status($connect)) {
+		qt_json_exit(500, array('success' => false, 'error' => 'Quotation approval is not set up yet: run cli/migrate_pi.php.'));
+	}
+	list($row, $error) = qt_fetch_owned_quotation($connect, isset($_POST['id']) ? $_POST['id'] : '', isset($_POST['type']) ? (string) $_POST['type'] : '');
+	if ($error !== null) {
+		qt_json_exit(404, array('success' => false, 'error' => $error));
+	}
+	$user = mysqli_real_escape_string($connect, $_SESSION['username']);
+	if ($action === 'approve_quotation') {
+		$set = "q_status = 'approved', q_approvedBy = '" . $user . "', q_approvedAt = NOW()";
+		$from = "''";
+		$fail = 'Only a quotation awaiting approval can be approved.';
+	} else {
+		$set = "q_status = 'ordered', q_orderedAt = NOW()";
+		$from = "'approved'";
+		$fail = 'Only an approved quotation can be converted to an order.';
+	}
+	$ok = mysqli_query($connect, "UPDATE tbl_quotation SET " . $set . " WHERE q_id = " . (int) $row['q_id']
+		. " AND q_user = '" . $user . "' AND q_status = " . $from);
+	if (!$ok) {
+		qt_json_exit(500, array('success' => false, 'error' => 'The quotation could not be updated.'));
+	}
+	if (mysqli_affected_rows($connect) !== 1) {
+		qt_json_exit(409, array('success' => false, 'error' => $fail));
+	}
+	if ($action === 'approve_quotation') {
+		qt_flash_set('Quotation ' . $row['q_num'] . ' approved.', 'success');
+		qt_json_exit(200, array('success' => true));
+	}
+	qt_json_exit(200, array('success' => true, 'redirect' => qt_sale_order_url($row['q_id'])));
+}
+
 qt_json_exit(400, array('success' => false, 'error' => 'Unknown action.'));

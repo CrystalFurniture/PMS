@@ -276,6 +276,37 @@ if (!$hasColumn('pi_documents', 'quotation_id')) {
 	$run("ALTER TABLE pi_documents ADD COLUMN quotation_id INT NULL");
 }
 
+// Quotation approval: '' = awaiting approval, 'approved' (Convert to order is offered), 'ordered'.
+if (!$hasColumn('tbl_quotation', 'q_status')) {
+	$run("ALTER TABLE tbl_quotation ADD COLUMN q_status VARCHAR(20) NOT NULL DEFAULT '',
+		ADD COLUMN q_approvedBy VARCHAR(200) NOT NULL DEFAULT '', ADD COLUMN q_approvedAt DATETIME NULL, ADD COLUMN q_orderedAt DATETIME NULL");
+}
+
+// Quotations / sale orders sent by email and WhatsApp (includes/send_lib.php): one row per recipient,
+// and the manager each user entered last (prefilled next time). app = 'pms' or 'tally'.
+$run("CREATE TABLE IF NOT EXISTS send_log (
+	id INT NOT NULL AUTO_INCREMENT,
+	app VARCHAR(10) NOT NULL,
+	doc_type VARCHAR(20) NOT NULL,
+	doc_ref VARCHAR(100) NOT NULL,
+	username VARCHAR(200) NOT NULL,
+	field VARCHAR(20) NOT NULL,
+	recipient VARCHAR(200) NOT NULL,
+	ok TINYINT(1) NOT NULL,
+	error VARCHAR(500) NOT NULL DEFAULT '',
+	created_at DATETIME NOT NULL,
+	PRIMARY KEY (id),
+	KEY doc (app, doc_type, doc_ref)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+$run("CREATE TABLE IF NOT EXISTS send_managers (
+	app VARCHAR(10) NOT NULL,
+	username VARCHAR(200) NOT NULL,
+	email VARCHAR(200) NOT NULL DEFAULT '',
+	whatsapp VARCHAR(20) NOT NULL DEFAULT '',
+	updated_at DATETIME NOT NULL,
+	PRIMARY KEY (app, username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
 // Series names by code prefix (CS-157 = Gothic): from the price lists' series headings, or added on AI Assistant settings.
 // The catalogue search adds the name to every product whose name starts with the prefix.
 $run("CREATE TABLE IF NOT EXISTS product_series (
